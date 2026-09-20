@@ -195,39 +195,40 @@ def assignment_payload(document: JsonObject, candidate: JsonObject, model: str) 
 
 def extract_answers(response: Any, payload: JsonObject) -> JsonObject:
     """Accept only the documented Choice envelope, including valid distributions."""
-    def reject() -> None:
-        raise RouterError("unsupported_jev_response")
+    def reject(reason: str) -> None:
+        raise RouterError(f"unsupported_jev_response:{reason}")
 
     if not isinstance(response, dict) or not isinstance(response.get("model"), str) or not response["model"].strip():
-        reject()
+        reject("model")
     answers = response.get("answers")
     questions = payload["questions"]
     if not isinstance(answers, dict) or set(answers) != set(questions):
-        reject()
+        reject("answer_keys")
     cleaned = {}
     for qid, question in questions.items():
         answer = answers[qid]
         options = question["criteria"]
         if not isinstance(answer, dict) or answer.get("type") != "choice":
-            reject()
+            reject(f"{qid}.type")
         chosen = answer.get("choice")
         probs = answer.get("probabilities")
         confidence = answer.get("confidence")
         if not isinstance(chosen, str) or chosen not in options or not _probability(confidence):
-            reject()
+            reject(f"{qid}.choice_or_confidence")
         if not isinstance(probs, dict) or set(probs) != set(options) or not all(_probability(v) for v in probs.values()):
-            reject()
+            reject(f"{qid}.probabilities")
         if not math.isclose(sum(probs.values()), 1.0, abs_tol=0.001) or probs[chosen] < max(probs.values()):
-            reject()
+            reject(f"{qid}.distribution")
         cleaned[qid] = {"type": "choice", "choice": chosen,
                         "confidence": confidence, "probabilities": probs}
     result = {"model": response["model"], "answers": cleaned}
     if "usage" in response:
         usage = response["usage"]
-        if (not isinstance(usage, dict)
-                or set(usage) != {"input_tokens", "output_tokens"}
-                or any(type(usage[key]) is not int or usage[key] < 0 for key in usage)):
-            reject()
+        if not isinstance(usage, dict):
+            reject("usage")
+        for key in ("input_tokens", "output_tokens"):
+            if key in usage and (type(usage[key]) is not int or usage[key] < 0):
+                reject(f"usage.{key}")
         result["usage"] = usage
     return result
 

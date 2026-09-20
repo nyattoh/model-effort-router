@@ -114,6 +114,14 @@ class ChoicePayloadTests(unittest.TestCase):
         with self.assertRaisesRegex(RouterError, "unsupported_jev_response"):
             extract_answers({"answers": {"decomposition": {"type": "choice"}}}, payload)
 
+    def test_usage_allows_forward_compatible_metadata(self) -> None:
+        document = validate_request(input_document())
+        payload = decomposition_payload(document, "jev-latest")
+        response = documented_response(payload)
+        response["usage"]["total_tokens"] = 15
+        result = extract_answers(response, payload)
+        self.assertEqual(result["usage"]["total_tokens"], 15)
+
     def test_huge_integer_probability_fails_as_router_error(self) -> None:
         document = validate_request(input_document())
         payload = decomposition_payload(document, "jev-latest")
