@@ -1,0 +1,68 @@
+{
+  "request": "Audit a Python service, fix confirmed defects, and document the result.",
+  "constraints": {
+    "prefer_parallel": true,
+    "require_tests": true
+  },
+  "max_parallel": 3,
+  "candidates": [
+    {
+      "id": "inspect_then_fix",
+      "description": "Inspect architecture and tests in parallel, then implement and verify.",
+      "tasks": [
+        {
+          "id": "inspect_code",
+          "description": "Inspect the implementation for correctness risks.",
+          "depends_on": [],
+          "requirements": ["code_review"]
+        },
+        {
+          "id": "inspect_tests",
+          "description": "Identify missing or weak regression coverage.",
+          "depends_on": [],
+          "requirements": ["testing"]
+        },
+        {
+          "id": "implement",
+          "description": "Fix confirmed defects without unrelated refactoring.",
+          "depends_on": ["inspect_code", "inspect_tests"],
+          "requirements": ["coding", "reasoning"]
+        },
+        {
+          "id": "verify",
+          "description": "Run focused checks and document remaining uncertainty.",
+          "depends_on": ["implement"],
+          "requirements": ["testing", "documentation"]
+        }
+      ]
+    },
+    {
+      "id": "single_pass",
+      "description": "Use one generalist task for inspection, implementation, and verification.",
+      "tasks": [
+        {
+          "id": "complete_request",
+          "description": "Inspect, fix, test, and document the service.",
+          "depends_on": [],
+          "requirements": ["code_review", "coding", "testing", "documentation"]
+        }
+      ]
+    }
+  ],
+  "models": [
+    {
+      "id": "reasoning-model",
+      "provider": "example",
+      "description": "Strong reasoning and implementation model.",
+      "efforts": ["medium", "high"],
+      "capabilities": ["code_review", "coding", "testing", "reasoning"]
+    },
+    {
+      "id": "fast-model",
+      "provider": "example",
+      "description": "Fast model for bounded checks and concise documentation.",
+      "efforts": ["low", "medium"],
+      "capabilities": ["testing", "documentation"]
+    }
+  ]
+}

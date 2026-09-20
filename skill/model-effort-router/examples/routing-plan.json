@@ -1,0 +1,144 @@
+{
+  "schema_version": "1.0",
+  "request_summary": "Add a validated feature and its documentation",
+  "operating_mode": "framework_only",
+  "jev_api_call": "not_made",
+  "safety": {
+    "state_contains_secrets": false,
+    "state_contains_personal_information": false
+  },
+  "capability_catalogue": {
+    "source": "live_host_introspection",
+    "captured_at": "YYYY-MM-DDTHH:MM:SSZ",
+    "concurrency_limit": 2,
+    "pairs": [
+      {
+        "key": "capability:model_a:medium",
+        "model": "model_a",
+        "effort": "medium"
+      },
+      {
+        "key": "capability:model_b:high",
+        "model": "model_b",
+        "effort": "high"
+      }
+    ]
+  },
+  "decomposition_candidates": [
+    {
+      "id": "candidate_minimal",
+      "summary": "One implementation task followed by independent validation",
+      "task_ids": ["implement", "validate"],
+      "critical_path": ["implement", "validate"],
+      "risks": ["Less parallelism"]
+    },
+    {
+      "id": "candidate_parallel",
+      "summary": "Separate code and documentation ownership, then integrate",
+      "task_ids": ["code", "docs", "integrate"],
+      "critical_path": ["code", "integrate"],
+      "risks": ["Interface drift before integration"]
+    }
+  ],
+  "decomposition_decision": {
+    "qid": "decomposition",
+    "question_type": "choice",
+    "options": [
+      "candidate_minimal",
+      "candidate_parallel",
+      "insufficient_evidence"
+    ],
+    "selected": "candidate_parallel",
+    "decision_source": "framework_only_local",
+    "jev_api_call": "not_made",
+    "pre_dispatch_guard": "pass"
+  },
+  "tasks": [
+    {
+      "id": "code",
+      "depends_on": [],
+      "level": 0,
+      "owner_scope": ["src/**", "tests/**"],
+      "deliverable": "Feature code and focused tests",
+      "acceptance_checks": ["Focused tests pass"],
+      "routing": {
+        "qid": "route_code",
+        "question_type": "choice",
+        "options": [
+          "capability:model_a:medium",
+          "capability:model_b:high",
+          "insufficient_capability"
+        ],
+        "selected": "capability:model_b:high",
+        "decision_source": "framework_only_local",
+        "pre_dispatch_guard": "pass"
+      }
+    },
+    {
+      "id": "docs",
+      "depends_on": [],
+      "level": 0,
+      "owner_scope": ["docs/**"],
+      "deliverable": "Usage documentation",
+      "acceptance_checks": ["Documented commands match the implemented interface"],
+      "routing": {
+        "qid": "route_docs",
+        "question_type": "choice",
+        "options": [
+          "capability:model_a:medium",
+          "insufficient_capability"
+        ],
+        "selected": "capability:model_a:medium",
+        "decision_source": "framework_only_local",
+        "pre_dispatch_guard": "pass"
+      }
+    },
+    {
+      "id": "integrate",
+      "depends_on": ["code", "docs"],
+      "level": 1,
+      "owner_scope": ["integration_validation"],
+      "deliverable": "Integrated result and fan-in report",
+      "acceptance_checks": [
+        "All expected deliverables are present",
+        "Tests pass",
+        "Documentation matches behaviour",
+        "No result remains silently unverified"
+      ],
+      "routing": {
+        "qid": "route_integrate",
+        "question_type": "choice",
+        "options": [
+          "capability:model_b:high",
+          "insufficient_capability"
+        ],
+        "selected": "capability:model_b:high",
+        "decision_source": "framework_only_local",
+        "pre_dispatch_guard": "pass"
+      }
+    }
+  ],
+  "dispatch": {
+    "levels": [
+      {
+        "level": 0,
+        "parallel_task_ids": ["code", "docs"]
+      },
+      {
+        "level": 1,
+        "parallel_task_ids": ["integrate"]
+      }
+    ]
+  },
+  "fan_in": {
+    "status": "pending",
+    "checks": [
+      "deliverable_completeness",
+      "contract_consistency",
+      "evidence_reconciliation",
+      "original_acceptance_criteria",
+      "secret_and_personal_information_absence"
+    ],
+    "unverified": []
+  }
+}
