@@ -1,0 +1,44 @@
+{
+  "method": "4 characters per token estimate",
+  "scope": "per-worker dispatch context; not provider billing or model performance",
+  "fixture": "examples/request.json",
+  "candidate_id": "inspect_then_fix",
+  "baseline_total_estimated_tokens": 1720,
+  "routed_total_estimated_tokens": 377,
+  "estimated_reduction_tokens": 1343,
+  "estimated_reduction_percent": 78.08,
+  "per_task": [
+    {
+      "task_id": "inspect_code",
+      "model": "reasoning-model",
+      "effort": "medium",
+      "baseline_estimated_tokens": 427,
+      "routed_estimated_tokens": 92,
+      "estimated_reduction_percent": 78.45
+    },
+    {
+      "task_id": "inspect_tests",
+      "model": "fast-model",
+      "effort": "low",
+      "baseline_estimated_tokens": 425,
+      "routed_estimated_tokens": 88,
+      "estimated_reduction_percent": 79.29
+    },
+    {
+      "task_id": "implement",
+      "model": "reasoning-model",
+      "effort": "medium",
+      "baseline_estimated_tokens": 436,
+      "routed_estimated_tokens": 101,
+      "estimated_reduction_percent": 76.83
+    },
+    {
+      "task_id": "verify",
+      "model": "fast-model",
+      "effort": "low",
+      "baseline_estimated_tokens": 432,
+      "routed_estimated_tokens": 96,
+      "estimated_reduction_percent": 77.78
+    }
+  ]
+}

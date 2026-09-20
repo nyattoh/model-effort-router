@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="350" viewBox="0 0 720 350" role="img" aria-labelledby="title desc">
+<title id="title">Estimated dispatch-context token reduction</title>
+<desc id="desc">Full context 1720 estimated tokens versus task handoff 377; estimated reduction 78.08%.</desc>
+<rect width="720" height="350" fill="white"/>
+<text x="360" y="25" text-anchor="middle" font-family="sans-serif" font-size="18" font-weight="bold">Estimated dispatch-context tokens</text>
+<text x="360" y="325" text-anchor="middle" font-family="sans-serif" font-size="13">Estimate: 4 characters per token; fixture: examples/request.json</text>
+<line x1="90" y1="275" x2="610" y2="275" stroke="#333"/>
+<rect x="165" y="45.0" width="110" height="230.0" fill="#9b5de5"/><rect x="385" y="224.6" width="110" height="50.4" fill="#00bbf9"/>
+<text x="220" y="297" text-anchor="middle">Full context</text><text x="220" y="37.0" text-anchor="middle">1720</text><text x="440" y="297" text-anchor="middle">Task handoff</text><text x="440" y="216.6" text-anchor="middle">377</text>
+<text x="360" y="285" text-anchor="middle" font-family="sans-serif" font-size="16" fill="#087f5b">Estimated reduction: 78.08%</text>
+</svg>

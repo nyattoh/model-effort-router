@@ -92,6 +92,22 @@ Codex、Claude、Gemini、汎用オーケストレーター向けの対応例は
 [references/adapters.md](skill/model-effort-router/references/adapters.md)に分離しています。
 中核ワークフローとJSON契約は特定プロバイダーに依存しません。
 
+## トークン削減の測定
+
+再現可能なfixtureで、workerごとのdispatch contextを測定できます。これは
+プロバイダーの課金、レイテンシー、品質、モデル性能の測定ではありません。
+
+~~~powershell
+python scripts/measure_token_reduction.py examples/request.json --json-out docs/token-reduction-results.json --svg-out docs/token-reduction.svg
+~~~
+
+![推定dispatch contextトークン削減](docs/token-reduction.svg)
+
+付属fixtureでは、全体コンテキスト方式が**推定1,720トークン**、
+タスクhandoff方式が**推定377トークン**でした。差は**1,343トークン
+(78.08%)**です。これは4文字を1トークンとする透明な近似であり、
+プロバイダーのtokenizerや性能を示すものではありません。
+
 ## Jevモードとプライバシー
 
 TYPESAFE_API_KEYがない場合は**framework-only／dry-runモード**です。

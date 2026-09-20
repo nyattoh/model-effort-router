@@ -101,6 +101,22 @@ orchestrators are isolated in
 [`references/adapters.md`](skill/model-effort-router/references/adapters.md).
 The core workflow and JSON contract do not depend on any one provider.
 
+## Token reduction measurement
+
+The reproducible fixture measures per-worker dispatch context, not provider
+billing, latency, quality, or model performance:
+
+~~~powershell
+python scripts/measure_token_reduction.py examples/request.json --json-out docs/token-reduction-results.json --svg-out docs/token-reduction.svg
+~~~
+
+![Estimated dispatch-context token reduction](docs/token-reduction.svg)
+
+For the supplied fixture, the full-context baseline is **1,720 estimated tokens**
+and the task handoff is **377 estimated tokens**: **1,343 fewer tokens
+(78.08%)**. This uses a transparent four-characters-per-token estimate and
+should not be read as a provider tokenizer or a performance claim.
+
 ## Jev modes and privacy
 
 When `TYPESAFE_API_KEY` is absent, this is **framework-only / dry-run mode**:
