@@ -117,6 +117,20 @@ and the task handoff is **377 estimated tokens**: **1,343 fewer tokens
 (78.08%)**. This uses a transparent four-characters-per-token estimate and
 should not be read as a provider tokenizer or a performance claim.
 
+## Checkpoint gate
+
+Workers can submit a compact, evidence-backed checkpoint before dependent work
+or external effects. The router asks Jev for a next action and a risk class,
+then releases work only when both answers pass the configured confidence policy.
+Otherwise it returns human_review.
+
+~~~powershell
+python -m model_effort_router examples/checkpoint.json --checkpoint --dry-run
+~~~
+
+Use review_checkpoint from the Python API for an integrated host adapter.
+Checkpoints contain evidence and uncertainty, not chain-of-thought.
+
 ## Jev modes and privacy
 
 When `TYPESAFE_API_KEY` is absent, this is **framework-only / dry-run mode**:

@@ -108,6 +108,19 @@ python scripts/measure_token_reduction.py examples/request.json --json-out docs/
 (78.08%)**です。これは4文字を1トークンとする透明な近似であり、
 プロバイダーのtokenizerや性能を示すものではありません。
 
+## Checkpoint gate
+
+workerは、依存タスクを解放する前や外部作用の前に、証拠付きのcheckpointを
+提出できます。routerはJevへ次のアクションとリスク分類を尋ね、両方がconfidence
+policyを通過した場合だけ続行を許可します。それ以外はhuman_reviewです。
+
+~~~powershell
+python -m model_effort_router examples/checkpoint.json --checkpoint --dry-run
+~~~
+
+統合ホストではPython APIのreview_checkpointを使えます。checkpointには証拠と
+不確実性を含めますが、Chain-of-thoughtは含めません。
+
 ## Jevモードとプライバシー
 
 TYPESAFE_API_KEYがない場合は**framework-only／dry-runモード**です。

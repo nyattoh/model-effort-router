@@ -30,3 +30,24 @@ tasks in that decomposition.
 
 This is an unofficial integration. Jev is a TypeSafe AI service and is not part
 of this repository.
+
+## Checkpoint gate
+
+Workers can emit a compact checkpoint before dependent work or external effects.
+The checkpoint contains the task's understanding, acceptance checks, completed
+work, evidence references, uncertainties, blockers, and proposed action. It does
+not contain chain-of-thought.
+
+The router sends two independent Choice questions to Jev:
+
+- next_action: continue, revise, human_review, or stop;
+- risk_class: no_known_risk, input, implementation, integration, or evaluation
+  failure.
+
+Only continue plus no_known_risk, with both answers above the configured
+confidence threshold, produces pre_dispatch_guard: pass. Every other result
+produces human_review and prevents automatic release of dependent work.
+
+Use the CLI with --checkpoint or call review_checkpoint directly. This is a
+direct Jev integration; an MCP facade can be added later without changing the
+checkpoint contract.

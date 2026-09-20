@@ -1,0 +1,23 @@
+{
+  "task_id": "implement",
+  "checkpoint": "after_tests",
+  "status": "partial",
+  "understanding": {
+    "goal": "Fix confirmed defects without unrelated refactoring.",
+    "acceptance": [
+      "Focused tests pass",
+      "Public API remains stable"
+    ]
+  },
+  "completed": [
+    "Focused tests"
+  ],
+  "evidence": [
+    "tests/test_contract.py: 17 passed"
+  ],
+  "uncertainties": [
+    "Live provider capability is not part of this fixture."
+  ],
+  "blockers": [],
+  "proposed_action": "continue"
+}

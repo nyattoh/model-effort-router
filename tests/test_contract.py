@@ -12,7 +12,13 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from model_effort_router import RouterError, route, validate_request
+from model_effort_router import (
+    RouterError,
+    review_checkpoint,
+    route,
+    validate_checkpoint,
+    validate_request,
+)
 from model_effort_router.router import (
     ABSTAIN,
     assignment_payload,
@@ -55,6 +61,23 @@ def input_document(*, first_dependencies: list[str] | None = None) -> dict[str, 
         ],
         "models": [MODEL],
         "max_parallel": 2,
+    }
+
+
+def checkpoint_document() -> dict[str, object]:
+    return {
+        "task_id": "implement",
+        "checkpoint": "after_tests",
+        "status": "partial",
+        "understanding": {
+            "goal": "Fix the confirmed defect without unrelated refactoring.",
+            "acceptance": ["Focused tests pass", "Public API remains stable"],
+        },
+        "completed": ["Focused tests"],
+        "evidence": ["tests/test_contract.py: 13 passed"],
+        "uncertainties": ["Live provider capability is not part of this fixture."],
+        "blockers": [],
+        "proposed_action": "continue",
     }
 
 
@@ -129,6 +152,37 @@ class ChoicePayloadTests(unittest.TestCase):
         response["answers"]["decomposition"]["confidence"] = 10**400
         with self.assertRaisesRegex(RouterError, "unsupported_jev_response"):
             extract_answers(response, payload)
+
+
+class CheckpointTests(unittest.TestCase):
+    def test_checkpoint_validation_rejects_unknown_status(self) -> None:
+        checkpoint = checkpoint_document()
+        checkpoint["status"] = "unknown"
+        with self.assertRaisesRegex(RouterError, "invalid_checkpoint_status"):
+            validate_checkpoint(checkpoint)
+
+    def test_checkpoint_without_key_returns_decision_payload(self) -> None:
+        with patch.dict(os.environ, {"TYPESAFE_API_KEY": ""}, clear=False):
+            result = review_checkpoint(checkpoint_document())
+        self.assertEqual(result["status"], "decision_required")
+        self.assertEqual(result["pre_dispatch_guard"], "human_review")
+        self.assertFalse(result["jev_api_called"])
+        self.assertEqual(set(result["checkpoint_payload"]["questions"]), {"next_action", "risk_class"})
+
+    def test_checkpoint_signal_can_approve_continuation(self) -> None:
+        result = review_checkpoint(checkpoint_document(), client=documented_response)
+        self.assertEqual(result["status"], "ready")
+        self.assertEqual(result["pre_dispatch_guard"], "pass")
+        self.assertEqual(result["signal"]["answers"]["next_action"]["choice"], "continue")
+
+    def test_checkpoint_low_confidence_requires_review(self) -> None:
+        result = review_checkpoint(
+            checkpoint_document(),
+            client=lambda payload: documented_response(payload, confidence=0.2),
+        )
+        self.assertEqual(result["status"], "needs_review")
+        self.assertEqual(result["pre_dispatch_guard"], "human_review")
+        self.assertEqual(set(result["unresolved_questions"]), {"next_action", "risk_class"})
 
 
 class RoutingTests(unittest.TestCase):

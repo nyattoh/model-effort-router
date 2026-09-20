@@ -315,6 +315,41 @@ Do not copy third-party speed or accuracy figures into public documentation.
 TypeSafe/Jev performance information remains subject to the publication guardrail
 above.
 
+## Checkpoint gate
+
+Workers may emit a compact checkpoint before dependent work or external effects.
+The checkpoint must contain:
+
+~~~json
+{
+  "task_id": "string",
+  "checkpoint": "string",
+  "status": "in_progress | partial | complete | blocked | failed",
+  "understanding": {
+    "goal": "string",
+    "acceptance": ["string"]
+  },
+  "completed": ["string"],
+  "evidence": ["string"],
+  "uncertainties": ["string"],
+  "blockers": ["string"],
+  "proposed_action": "continue | revise | human_review | stop"
+}
+~~~
+
+Do not include chain-of-thought, credentials, private tokens, or raw private
+repository contents. Send the compact checkpoint through two independent Choice
+questions:
+
+- next_action: continue, revise, human_review, or stop;
+- risk_class: no_known_risk, input_condition_failure,
+  implementation_failure, integration_failure, or evaluation_failure.
+
+The pre-dispatch guard passes only when both selected answers are above the
+configured confidence threshold, next_action is continue, and risk_class is
+no_known_risk. Otherwise return human_review and do not release dependent
+work. Use the CLI's --checkpoint mode or the review_checkpoint library API.
+
 ## Resources
 
 - [references/adapters.md](references/adapters.md): map abstract operations to

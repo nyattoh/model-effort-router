@@ -6,12 +6,14 @@ import os
 import sys
 from pathlib import Path
 
-from .router import RouterError, route
+from .router import RouterError, review_checkpoint, route
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Select task plans and model/effort pairs using Jev.")
     parser.add_argument("request", nargs="?", default="-", help="JSON file, or - for stdin")
+    parser.add_argument("--checkpoint", action="store_true",
+                        help="review one worker checkpoint instead of routing a request")
     parser.add_argument("--dry-run", action="store_true", help="emit decision payloads; never call Jev")
     parser.add_argument("--min-confidence", type=float, default=0.5,
                         help="user policy threshold (0 to 1; default 0.5 is not empirically calibrated)")
@@ -21,8 +23,13 @@ def main() -> int:
     try:
         raw = sys.stdin.read() if args.request == "-" else Path(args.request).read_text(encoding="utf-8-sig")
         document = json.loads(raw)
-        result = route(document, dry_run=args.dry_run, min_confidence=args.min_confidence,
-                       jev_model=args.jev_model, timeout=args.timeout)
+        if args.checkpoint:
+            result = review_checkpoint(document, dry_run=args.dry_run,
+                                       min_confidence=args.min_confidence,
+                                       jev_model=args.jev_model, timeout=args.timeout)
+        else:
+            result = route(document, dry_run=args.dry_run, min_confidence=args.min_confidence,
+                           jev_model=args.jev_model, timeout=args.timeout)
         code = 0 if result["status"] != "needs_review" else 3
     except RouterError as exc:
         result, code = {"ok": False, "error": str(exc)}, 2
