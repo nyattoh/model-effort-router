@@ -1,22 +1,25 @@
-"""Measure compact dispatch-context savings and render a dependency-free SVG chart."""
+"""Measure dispatch-context payloads with explicit reference tokenizers."""
 
 from __future__ import annotations
 
 import argparse
 import json
-import math
 from pathlib import Path
 from typing import Any
 
+try:
+    import tiktoken
+except ImportError as exc:
+    raise SystemExit("Install benchmark support with: python -m pip install -e .[benchmark]") from exc
+
 
 JsonObject = dict[str, Any]
+ENCODINGS = ("cl100k_base", "o200k_base")
 EFFORT_ORDER = {"low": 0, "medium": 1, "high": 2, "xhigh": 3, "max": 4}
 
 
-def estimate_tokens(value: Any) -> int:
-    """Use a transparent 4-characters-per-token estimate, not a provider tokenizer."""
-    text = json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
-    return max(1, math.ceil(len(text) / 4))
+def serialise(value: Any) -> str:
+    return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
 
 
 def eligible_pairs(task: JsonObject, models: list[JsonObject]) -> list[JsonObject]:
@@ -40,77 +43,113 @@ def choose_pair(task: JsonObject, models: list[JsonObject]) -> JsonObject:
     return min(pairs, key=lambda pair: (EFFORT_ORDER.get(pair["effort"], 99), pair["model"]))
 
 
-def measure(document: JsonObject) -> JsonObject:
+def build_payloads(document: JsonObject) -> tuple[str, list[JsonObject]]:
     candidate = document["candidates"][0]
     rows = []
     for task in candidate["tasks"]:
         pair = choose_pair(task, document["models"])
-        baseline = {
-            "request": document["request"],
-            "constraints": document.get("constraints", {}),
-            "all_candidates": document["candidates"],
-            "all_models": document["models"],
-            "task": task,
-        }
-        routed = {
-            "request": document["request"],
-            "constraints": document.get("constraints", {}),
-            "task": task,
-            "assignment": pair,
-        }
-        baseline_tokens = estimate_tokens(baseline)
-        routed_tokens = estimate_tokens(routed)
         rows.append({
             "task_id": task["id"],
             "model": pair["model"],
             "effort": pair["effort"],
-            "baseline_estimated_tokens": baseline_tokens,
-            "routed_estimated_tokens": routed_tokens,
-            "estimated_reduction_percent": round((baseline_tokens - routed_tokens) / baseline_tokens * 100, 2),
+            "baseline": {
+                "request": document["request"],
+                "constraints": document.get("constraints", {}),
+                "all_candidates": document["candidates"],
+                "all_models": document["models"],
+                "task": task,
+            },
+            "routed": {
+                "request": document["request"],
+                "constraints": document.get("constraints", {}),
+                "task": task,
+                "assignment": pair,
+            },
+        })
+    return candidate["id"], rows
+
+
+def measure(document: JsonObject, encoding_names: tuple[str, ...] = ENCODINGS) -> JsonObject:
+    candidate_id, payloads = build_payloads(document)
+    measurements = []
+    for encoding_name in encoding_names:
+        encoding = tiktoken.get_encoding(encoding_name)
+        per_task = []
+        for row in payloads:
+            baseline = len(encoding.encode(serialise(row["baseline"])))
+            routed = len(encoding.encode(serialise(row["routed"])))
+            per_task.append({
+                "task_id": row["task_id"],
+                "model": row["model"],
+                "effort": row["effort"],
+                "baseline_tokens": baseline,
+                "routed_tokens": routed,
+                "reduction_tokens": baseline - routed,
+                "reduction_percent": round((baseline - routed) / baseline * 100, 2),
+            })
+        baseline_total = sum(row["baseline_tokens"] for row in per_task)
+        routed_total = sum(row["routed_tokens"] for row in per_task)
+        measurements.append({
+            "encoding": encoding_name,
+            "baseline_total_tokens": baseline_total,
+            "routed_total_tokens": routed_total,
+            "reduction_tokens": baseline_total - routed_total,
+            "reduction_percent": round((baseline_total - routed_total) / baseline_total * 100, 2),
+            "per_task": per_task,
         })
 
-    baseline_total = sum(row["baseline_estimated_tokens"] for row in rows)
-    routed_total = sum(row["routed_estimated_tokens"] for row in rows)
-    reduction = baseline_total - routed_total
+    reductions = [row["reduction_percent"] for row in measurements]
     return {
-        "method": "4 characters per token estimate",
-        "scope": "per-worker dispatch context; not provider billing or model performance",
+        "method": "OpenAI tiktoken reference encodings",
+        "tiktoken_version": tiktoken.__version__,
+        "scope": "synthetic per-worker dispatch payloads; not observed session usage, billing, latency, quality, or model performance",
         "fixture": "examples/request.json",
-        "candidate_id": candidate["id"],
-        "baseline_total_estimated_tokens": baseline_total,
-        "routed_total_estimated_tokens": routed_total,
-        "estimated_reduction_tokens": reduction,
-        "estimated_reduction_percent": round(reduction / baseline_total * 100, 2),
-        "per_task": rows,
+        "candidate_id": candidate_id,
+        "assumptions": {
+            "candidate_selection": "first candidate in the fixture",
+            "assignment_policy": "lowest declared eligible effort, then model id",
+            "baseline": "full request, all candidates, and all models repeated for every worker",
+            "routed": "request, constraints, selected task, and selected assignment per worker",
+            "excluded": "system prompts, tool schemas, provider wrappers, runtime results, retries, and cache effects"
+        },
+        "reduction_percent_range": {"min": min(reductions), "max": max(reductions)},
+        "measurements": measurements
     }
 
 
 def render_svg(result: JsonObject) -> str:
-    baseline = result["baseline_total_estimated_tokens"]
-    routed = result["routed_total_estimated_tokens"]
-    chart_left, chart_top, chart_width, chart_height = 90, 45, 520, 230
-    scale = chart_height / max(baseline, routed)
-    bars = [("Full context", baseline, "#9b5de5"), ("Task handoff", routed, "#00bbf9")]
-    rects = []
+    measurements = result["measurements"]
+    maximum = max(row["baseline_total_tokens"] for row in measurements)
+    chart_left, chart_top, chart_height = 90, 80, 225
+    scale = chart_height / maximum
+    colours = {"baseline": "#8b5cf6", "routed": "#0284c7"}
+    marks = []
     labels = []
-    for index, (label, value, colour) in enumerate(bars):
-        x = chart_left + 75 + index * 220
-        height = round(value * scale, 1)
-        y = chart_top + chart_height - height
-        rects.append(f'<rect x="{x}" y="{y}" width="110" height="{height}" fill="{colour}"/>')
-        labels.append(f'<text x="{x + 55}" y="{chart_top + chart_height + 22}" text-anchor="middle">{label}</text>')
-        labels.append(f'<text x="{x + 55}" y="{y - 8}" text-anchor="middle">{value}</text>')
-    reduction = result["estimated_reduction_percent"]
-    return f"""<svg xmlns="http://www.w3.org/2000/svg" width="720" height="350" viewBox="0 0 720 350" role="img" aria-labelledby="title desc">
-<title id="title">Estimated dispatch-context token reduction</title>
-<desc id="desc">Full context {baseline} estimated tokens versus task handoff {routed}; estimated reduction {reduction}%.</desc>
-<rect width="720" height="350" fill="white"/>
-<text x="360" y="25" text-anchor="middle" font-family="sans-serif" font-size="18" font-weight="bold">Estimated dispatch-context tokens</text>
-<text x="360" y="325" text-anchor="middle" font-family="sans-serif" font-size="13">Estimate: 4 characters per token; fixture: examples/request.json</text>
-<line x1="{chart_left}" y1="{chart_top + chart_height}" x2="{chart_left + chart_width}" y2="{chart_top + chart_height}" stroke="#333"/>
-{''.join(rects)}
+    for group_index, row in enumerate(measurements):
+        group_x = 185 + group_index * 300
+        for bar_index, key in enumerate(("baseline_total_tokens", "routed_total_tokens")):
+            value = row[key]
+            x = group_x + bar_index * 90
+            height = round(value * scale, 1)
+            y = round(chart_top + chart_height - height, 1)
+            colour = colours["baseline" if bar_index == 0 else "routed"]
+            marks.append(f'<rect x="{x}" y="{y}" width="64" height="{height}" fill="{colour}"/>')
+            labels.append(f'<text x="{x + 32}" y="{round(y - 8, 1)}" text-anchor="middle">{value}</text>')
+        labels.append(f'<text x="{group_x + 77}" y="330" text-anchor="middle">{row["encoding"]}</text>')
+        labels.append(f'<text x="{group_x + 77}" y="350" text-anchor="middle" fill="#087f5b">-{row["reduction_percent"]}%</text>')
+    return f"""<svg xmlns="http://www.w3.org/2000/svg" width="820" height="410" viewBox="0 0 820 410" role="img" aria-labelledby="title desc">
+<title id="title">Dispatch-context token counts using reference encodings</title>
+<desc id="desc">Full-context and task-handoff payload token counts using cl100k_base and o200k_base.</desc>
+<rect width="820" height="410" fill="white"/>
+<text x="410" y="28" text-anchor="middle" font-family="sans-serif" font-size="18" font-weight="bold">Dispatch-context token counts</text>
+<text x="410" y="48" text-anchor="middle" font-family="sans-serif" font-size="12">Synthetic fixture; excludes system, tool, runtime, retry, and cache overhead</text>
+<line x1="{chart_left}" y1="{chart_top + chart_height}" x2="740" y2="{chart_top + chart_height}" stroke="#333"/>
+{''.join(marks)}
 {''.join(labels)}
-<text x="360" y="285" text-anchor="middle" font-family="sans-serif" font-size="16" fill="#087f5b">Estimated reduction: {reduction}%</text>
+<rect x="275" y="378" width="14" height="14" fill="{colours["baseline"]}"/>
+<text x="296" y="390" font-family="sans-serif" font-size="12">Full context per worker</text>
+<rect x="470" y="378" width="14" height="14" fill="{colours["routed"]}"/>
+<text x="491" y="390" font-family="sans-serif" font-size="12">Task handoff</text>
 </svg>
 """
 

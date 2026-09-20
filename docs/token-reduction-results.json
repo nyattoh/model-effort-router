@@ -1,44 +1,110 @@
 {
-  "method": "4 characters per token estimate",
-  "scope": "per-worker dispatch context; not provider billing or model performance",
+  "method": "OpenAI tiktoken reference encodings",
+  "tiktoken_version": "0.12.0",
+  "scope": "synthetic per-worker dispatch payloads; not observed session usage, billing, latency, quality, or model performance",
   "fixture": "examples/request.json",
   "candidate_id": "inspect_then_fix",
-  "baseline_total_estimated_tokens": 1720,
-  "routed_total_estimated_tokens": 377,
-  "estimated_reduction_tokens": 1343,
-  "estimated_reduction_percent": 78.08,
-  "per_task": [
+  "assumptions": {
+    "candidate_selection": "first candidate in the fixture",
+    "assignment_policy": "lowest declared eligible effort, then model id",
+    "baseline": "full request, all candidates, and all models repeated for every worker",
+    "routed": "request, constraints, selected task, and selected assignment per worker",
+    "excluded": "system prompts, tool schemas, provider wrappers, runtime results, retries, and cache effects"
+  },
+  "reduction_percent_range": {
+    "min": 76.9,
+    "max": 77.38
+  },
+  "measurements": [
     {
-      "task_id": "inspect_code",
-      "model": "reasoning-model",
-      "effort": "medium",
-      "baseline_estimated_tokens": 427,
-      "routed_estimated_tokens": 92,
-      "estimated_reduction_percent": 78.45
+      "encoding": "cl100k_base",
+      "baseline_total_tokens": 1277,
+      "routed_total_tokens": 295,
+      "reduction_tokens": 982,
+      "reduction_percent": 76.9,
+      "per_task": [
+        {
+          "task_id": "inspect_code",
+          "model": "reasoning-model",
+          "effort": "medium",
+          "baseline_tokens": 317,
+          "routed_tokens": 72,
+          "reduction_tokens": 245,
+          "reduction_percent": 77.29
+        },
+        {
+          "task_id": "inspect_tests",
+          "model": "fast-model",
+          "effort": "low",
+          "baseline_tokens": 317,
+          "routed_tokens": 71,
+          "reduction_tokens": 246,
+          "reduction_percent": 77.6
+        },
+        {
+          "task_id": "implement",
+          "model": "reasoning-model",
+          "effort": "medium",
+          "baseline_tokens": 324,
+          "routed_tokens": 79,
+          "reduction_tokens": 245,
+          "reduction_percent": 75.62
+        },
+        {
+          "task_id": "verify",
+          "model": "fast-model",
+          "effort": "low",
+          "baseline_tokens": 319,
+          "routed_tokens": 73,
+          "reduction_tokens": 246,
+          "reduction_percent": 77.12
+        }
+      ]
     },
     {
-      "task_id": "inspect_tests",
-      "model": "fast-model",
-      "effort": "low",
-      "baseline_estimated_tokens": 425,
-      "routed_estimated_tokens": 88,
-      "estimated_reduction_percent": 79.29
-    },
-    {
-      "task_id": "implement",
-      "model": "reasoning-model",
-      "effort": "medium",
-      "baseline_estimated_tokens": 436,
-      "routed_estimated_tokens": 101,
-      "estimated_reduction_percent": 76.83
-    },
-    {
-      "task_id": "verify",
-      "model": "fast-model",
-      "effort": "low",
-      "baseline_estimated_tokens": 432,
-      "routed_estimated_tokens": 96,
-      "estimated_reduction_percent": 77.78
+      "encoding": "o200k_base",
+      "baseline_total_tokens": 1326,
+      "routed_total_tokens": 300,
+      "reduction_tokens": 1026,
+      "reduction_percent": 77.38,
+      "per_task": [
+        {
+          "task_id": "inspect_code",
+          "model": "reasoning-model",
+          "effort": "medium",
+          "baseline_tokens": 329,
+          "routed_tokens": 73,
+          "reduction_tokens": 256,
+          "reduction_percent": 77.81
+        },
+        {
+          "task_id": "inspect_tests",
+          "model": "fast-model",
+          "effort": "low",
+          "baseline_tokens": 328,
+          "routed_tokens": 71,
+          "reduction_tokens": 257,
+          "reduction_percent": 78.35
+        },
+        {
+          "task_id": "implement",
+          "model": "reasoning-model",
+          "effort": "medium",
+          "baseline_tokens": 337,
+          "routed_tokens": 81,
+          "reduction_tokens": 256,
+          "reduction_percent": 75.96
+        },
+        {
+          "task_id": "verify",
+          "model": "fast-model",
+          "effort": "low",
+          "baseline_tokens": 332,
+          "routed_tokens": 75,
+          "reduction_tokens": 257,
+          "reduction_percent": 77.41
+        }
+      ]
     }
   ]
 }

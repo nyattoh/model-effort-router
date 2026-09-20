@@ -1,11 +1,14 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="720" height="350" viewBox="0 0 720 350" role="img" aria-labelledby="title desc">
-<title id="title">Estimated dispatch-context token reduction</title>
-<desc id="desc">Full context 1720 estimated tokens versus task handoff 377; estimated reduction 78.08%.</desc>
-<rect width="720" height="350" fill="white"/>
-<text x="360" y="25" text-anchor="middle" font-family="sans-serif" font-size="18" font-weight="bold">Estimated dispatch-context tokens</text>
-<text x="360" y="325" text-anchor="middle" font-family="sans-serif" font-size="13">Estimate: 4 characters per token; fixture: examples/request.json</text>
-<line x1="90" y1="275" x2="610" y2="275" stroke="#333"/>
-<rect x="165" y="45.0" width="110" height="230.0" fill="#9b5de5"/><rect x="385" y="224.6" width="110" height="50.4" fill="#00bbf9"/>
-<text x="220" y="297" text-anchor="middle">Full context</text><text x="220" y="37.0" text-anchor="middle">1720</text><text x="440" y="297" text-anchor="middle">Task handoff</text><text x="440" y="216.6" text-anchor="middle">377</text>
-<text x="360" y="285" text-anchor="middle" font-family="sans-serif" font-size="16" fill="#087f5b">Estimated reduction: 78.08%</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="820" height="410" viewBox="0 0 820 410" role="img" aria-labelledby="title desc">
+<title id="title">Dispatch-context token counts using reference encodings</title>
+<desc id="desc">Full-context and task-handoff payload token counts using cl100k_base and o200k_base.</desc>
+<rect width="820" height="410" fill="white"/>
+<text x="410" y="28" text-anchor="middle" font-family="sans-serif" font-size="18" font-weight="bold">Dispatch-context token counts</text>
+<text x="410" y="48" text-anchor="middle" font-family="sans-serif" font-size="12">Synthetic fixture; excludes system, tool, runtime, retry, and cache overhead</text>
+<line x1="90" y1="305" x2="740" y2="305" stroke="#333"/>
+<rect x="185" y="88.3" width="64" height="216.7" fill="#8b5cf6"/><rect x="275" y="254.9" width="64" height="50.1" fill="#0284c7"/><rect x="485" y="80.0" width="64" height="225.0" fill="#8b5cf6"/><rect x="575" y="254.1" width="64" height="50.9" fill="#0284c7"/>
+<text x="217" y="80.3" text-anchor="middle">1277</text><text x="307" y="246.9" text-anchor="middle">295</text><text x="262" y="330" text-anchor="middle">cl100k_base</text><text x="262" y="350" text-anchor="middle" fill="#087f5b">-76.9%</text><text x="517" y="72.0" text-anchor="middle">1326</text><text x="607" y="246.1" text-anchor="middle">300</text><text x="562" y="330" text-anchor="middle">o200k_base</text><text x="562" y="350" text-anchor="middle" fill="#087f5b">-77.38%</text>
+<rect x="275" y="378" width="14" height="14" fill="#8b5cf6"/>
+<text x="296" y="390" font-family="sans-serif" font-size="12">Full context per worker</text>
+<rect x="470" y="378" width="14" height="14" fill="#0284c7"/>
+<text x="491" y="390" font-family="sans-serif" font-size="12">Task handoff</text>
 </svg>

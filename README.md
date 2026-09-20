@@ -103,19 +103,29 @@ The core workflow and JSON contract do not depend on any one provider.
 
 ## Token reduction measurement
 
-The reproducible fixture measures per-worker dispatch context, not provider
-billing, latency, quality, or model performance:
+The reproducible fixture compares two synthetic per-worker payload policies.
+Install the benchmark extra and regenerate the checked-in results:
 
 ~~~powershell
+python -m pip install -e ".[benchmark]"
 python scripts/measure_token_reduction.py examples/request.json --json-out docs/token-reduction-results.json --svg-out docs/token-reduction.svg
 ~~~
 
 ![Estimated dispatch-context token reduction](docs/token-reduction.svg)
 
-For the supplied fixture, the full-context baseline is **1,720 estimated tokens**
-and the task handoff is **377 estimated tokens**: **1,343 fewer tokens
-(78.08%)**. This uses a transparent four-characters-per-token estimate and
-should not be read as a provider tokenizer or a performance claim.
+Measured with OpenAI tiktoken 0.12.0 reference encodings:
+
+- cl100k_base: **1,277 to 295 tokens (-76.90%)**
+- o200k_base: **1,326 to 300 tokens (-77.38%)**
+
+The fixture repeats the full request, all candidates, and all model definitions
+for every baseline worker. The routed payload contains only the request,
+constraints, selected task, and selected assignment. It excludes system prompts,
+tool schemas, provider wrappers, runtime results, retries, and cache effects.
+Therefore this is a payload simulation, not observed session usage, billing,
+quality, latency, or a model-performance claim. See the
+[tiktoken project](https://github.com/openai/tiktoken) and the checked-in
+[measurement details](docs/token-reduction-results.json).
 
 ## Checkpoint gate
 
@@ -130,6 +140,46 @@ python -m model_effort_router examples/checkpoint.json --checkpoint --dry-run
 
 Use review_checkpoint from the Python API for an integrated host adapter.
 Checkpoints contain evidence and uncertainty, not chain-of-thought.
+
+## API key setup
+
+Jev-backed mode has one provider-neutral credential contract:
+TYPESAFE_API_KEY must be available in the process environment. The library,
+skill, and plugin never store or print the key.
+
+Check the current process without revealing the value:
+
+~~~powershell
+python -m model_effort_router --check-api-key
+~~~
+
+For an interactive PowerShell session:
+
+~~~powershell
+$jevApiKey = Read-Host "TypeSafe API key" -MaskInput
+try {
+  $env:TYPESAFE_API_KEY = $jevApiKey
+  python -m model_effort_router examples/request.json
+} finally {
+  Remove-Item Env:\TYPESAFE_API_KEY -ErrorAction SilentlyContinue
+  $jevApiKey = $null
+}
+~~~
+
+For POSIX shells:
+
+~~~bash
+read -rsp "TypeSafe API key: " TYPESAFE_API_KEY
+export TYPESAFE_API_KEY
+python -m model_effort_router examples/request.json
+unset TYPESAFE_API_KEY
+~~~
+
+For CI, containers, and agent hosts, inject the same environment variable from
+the platform's secret store. Bitwarden Secrets Manager can use bws run. A Codex
+plugin inherits only the environment of its host process; installing the plugin
+does not configure the key. Do not commit the key to .env, JSON, plugin
+manifests, skill files, or logs.
 
 ## Jev modes and privacy
 

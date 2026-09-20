@@ -186,6 +186,21 @@ class CheckpointTests(unittest.TestCase):
 
 
 class RoutingTests(unittest.TestCase):
+    def test_cli_reports_key_presence_without_printing_key(self) -> None:
+        environment = os.environ.copy()
+        environment["PYTHONPATH"] = str(Path(__file__).resolve().parents[1] / "src")
+        environment["TYPESAFE_API_KEY"] = "configured-but-secret"
+        completed = subprocess.run(
+            [sys.executable, "-m", "model_effort_router", "--check-api-key"],
+            text=True,
+            capture_output=True,
+            check=False,
+            env=environment,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        self.assertEqual(json.loads(completed.stdout), {"TYPESAFE_API_KEY_configured": True})
+        self.assertNotIn(environment["TYPESAFE_API_KEY"], completed.stdout)
+
     def test_missing_key_never_opens_network(self) -> None:
         with patch.dict(os.environ, {"TYPESAFE_API_KEY": ""}, clear=False):
             with patch("model_effort_router.router.urllib.request.build_opener") as opener:

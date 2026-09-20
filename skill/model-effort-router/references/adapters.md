@@ -128,6 +128,18 @@ The Jev adapter is separate from the worker host adapter. It should:
 Do not label framework-only local output as Jev output. Network failure after an
 attempt is also not a Jev decision unless a valid typed answer was received.
 
+### Credential contract
+
+- Read only TYPESAFE_API_KEY from the host process environment.
+- Never depend on a particular vault product, item name, user profile, or path.
+- Let CI, containers, desktop launchers, and secret managers inject the same
+  environment variable.
+- Treat a missing key as framework-only mode; never invent or persist a value.
+- A skill or plugin installation does not configure the key. The host process
+  must inherit it before Jev-backed execution starts.
+- Check presence without revealing the value with
+  python -m model_effort_router --check-api-key.
+
 ## Capability catalogue example
 
 ```json

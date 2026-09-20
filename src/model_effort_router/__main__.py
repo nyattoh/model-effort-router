@@ -14,12 +14,19 @@ def main() -> int:
     parser.add_argument("request", nargs="?", default="-", help="JSON file, or - for stdin")
     parser.add_argument("--checkpoint", action="store_true",
                         help="review one worker checkpoint instead of routing a request")
+    parser.add_argument("--check-api-key", action="store_true",
+                        help="report whether TYPESAFE_API_KEY is configured without printing it")
     parser.add_argument("--dry-run", action="store_true", help="emit decision payloads; never call Jev")
     parser.add_argument("--min-confidence", type=float, default=0.5,
                         help="user policy threshold (0 to 1; default 0.5 is not empirically calibrated)")
     parser.add_argument("--jev-model", default="jev-latest")
     parser.add_argument("--timeout", type=float, default=30.0)
     args = parser.parse_args()
+    if args.check_api_key:
+        print(json.dumps({
+            "TYPESAFE_API_KEY_configured": bool(os.environ.get("TYPESAFE_API_KEY", "").strip())
+        }))
+        return 0
     try:
         raw = sys.stdin.read() if args.request == "-" else Path(args.request).read_text(encoding="utf-8-sig")
         document = json.loads(raw)

@@ -94,19 +94,28 @@ Codex、Claude、Gemini、汎用オーケストレーター向けの対応例は
 
 ## トークン削減の測定
 
-再現可能なfixtureで、workerごとのdispatch contextを測定できます。これは
-プロバイダーの課金、レイテンシー、品質、モデル性能の測定ではありません。
+再現可能なfixtureで、workerごとの2種類のpayload方針を比較します。
+benchmark用の依存を導入して、保存済み結果を再生成できます。
 
 ~~~powershell
+python -m pip install -e ".[benchmark]"
 python scripts/measure_token_reduction.py examples/request.json --json-out docs/token-reduction-results.json --svg-out docs/token-reduction.svg
 ~~~
 
 ![推定dispatch contextトークン削減](docs/token-reduction.svg)
 
-付属fixtureでは、全体コンテキスト方式が**推定1,720トークン**、
-タスクhandoff方式が**推定377トークン**でした。差は**1,343トークン
-(78.08%)**です。これは4文字を1トークンとする透明な近似であり、
-プロバイダーのtokenizerや性能を示すものではありません。
+OpenAI tiktoken 0.12.0の参照encodingによる測定結果です。
+
+- cl100k_base: **1,277から295トークン（76.90%削減）**
+- o200k_base: **1,326から300トークン（77.38%削減）**
+
+baselineは全request、全候補、全model定義を各workerへ繰り返します。handoff側は
+request、制約、選択タスク、選択assignmentだけを渡します。system prompt、tool
+schema、provider wrapper、実行結果、retry、cache効果は含みません。したがって、
+これはpayload simulationであり、実セッション使用量、課金、品質、latency、
+モデル性能の主張ではありません。詳細は
+[tiktoken](https://github.com/openai/tiktoken)と
+[測定結果JSON](docs/token-reduction-results.json)を参照してください。
 
 ## Checkpoint gate
 
@@ -120,6 +129,44 @@ python -m model_effort_router examples/checkpoint.json --checkpoint --dry-run
 
 統合ホストではPython APIのreview_checkpointを使えます。checkpointには証拠と
 不確実性を含めますが、Chain-of-thoughtは含めません。
+
+## APIキー設定
+
+Jev-backed modeのcredential contractは環境変数TYPESAFE_API_KEYだけです。
+library、skill、pluginはキーを保存・表示しません。
+
+現在のprocessからキーが見えているか、値を表示せず確認できます。
+
+~~~powershell
+python -m model_effort_router --check-api-key
+~~~
+
+PowerShellで一時的に設定する場合:
+
+~~~powershell
+$jevApiKey = Read-Host "TypeSafe API key" -MaskInput
+try {
+  $env:TYPESAFE_API_KEY = $jevApiKey
+  python -m model_effort_router examples/request.json
+} finally {
+  Remove-Item Env:\TYPESAFE_API_KEY -ErrorAction SilentlyContinue
+  $jevApiKey = $null
+}
+~~~
+
+POSIX shellの場合:
+
+~~~bash
+read -rsp "TypeSafe API key: " TYPESAFE_API_KEY
+export TYPESAFE_API_KEY
+python -m model_effort_router examples/request.json
+unset TYPESAFE_API_KEY
+~~~
+
+CI、container、agent hostでは、各platformのsecret storeから同じ環境変数を
+注入してください。Bitwarden Secrets Managerではbws runを利用できます。
+Codex pluginはhost processの環境だけを継承し、pluginのinstallだけではキーを
+設定しません。.env、JSON、plugin manifest、skill、logへキーを保存しないでください。
 
 ## Jevモードとプライバシー
 
