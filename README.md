@@ -1,6 +1,6 @@
 # model-effort-router
 
-[譌･譛ｬ隱枉(README.ja.md) | English
+[Japanese README](README.ja.md) | English
 
 `model-effort-router` decomposes an incoming request by selecting one supplied
 task-DAG candidate, then assigns a supplied `(model, effort)` pair to each
