@@ -1,5 +1,7 @@
 # model-effort-router
 
+[譌･譛ｬ隱枉(README.ja.md) | English
+
 `model-effort-router` decomposes an incoming request by selecting one supplied
 task-DAG candidate, then assigns a supplied `(model, effort)` pair to each
 selected task. It is an offline-first Python 3.11+ library and CLI with no
@@ -20,8 +22,8 @@ invoke a model provider or execute the resulting tasks.
   with, endorsed by, or supported by TypeSafe.
 - The TypeSafe Choice primitive response shape is based on the
   [official Choice documentation](https://docs.typesafe.ai/primitives/choice).
-  Live compatibility has **not** been verified here because no API key is
-  configured; treat live-response compatibility as **UNVERIFIED**.
+  Live compatibility has been verified with a public synthetic fixture. Actual
+  host dispatch and provider capability discovery remain caller responsibilities.
 
 ## Input contract
 
